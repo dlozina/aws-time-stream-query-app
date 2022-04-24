@@ -1,0 +1,24 @@
+{
+  "name": "dlozina-timestream-query-app",
+  "version": "1.0.0",
+  "description": "POC NodeJs application to use/query Timestream",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awslabs/amazon-timestream-tools.git"
+  },
+  "keywords": [
+    "Timestream",
+    "AWS"
+  ],
+  "author": "Dino Lozina",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/awslabs/amazon-timestream-tools/issues"
+  },
+  "homepage": "https://github.com/awslabs/amazon-timestream-tools/tree/master/sample_apps/js#readme",
+  "dependencies": {
+    "aws-sdk": "^2.1036.0",
+    "minimist": "^1.2.6"
+  }
+}
