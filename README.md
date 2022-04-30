@@ -15,7 +15,7 @@ This POC can run custom queries to Amazon Timestream.
     ```
  1. Run the sample application
     ```shell
-    node main.js
+    node app.js
     ```
          
 -----

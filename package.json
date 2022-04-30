@@ -2,7 +2,7 @@
   "name": "dlozina-timestream-query-app",
   "version": "1.0.0",
   "description": "POC NodeJs application to use/query Timestream",
-  "main": "main.js",
+  "main": "app.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/awslabs/amazon-timestream-tools.git"
@@ -19,6 +19,7 @@
   "homepage": "https://github.com/awslabs/amazon-timestream-tools/tree/master/sample_apps/js#readme",
   "dependencies": {
     "aws-sdk": "^2.1036.0",
+    "express": "^4.18.1",
     "minimist": "^1.2.6"
   }
 }

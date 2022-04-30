@@ -1,4 +1,4 @@
-const constants = require('./constants');
+const constants = require('../constants');
 
 // Constrain query cost
 const ONE_GB_IN_BYTES = 1073741824;
@@ -6,20 +6,6 @@ const ONE_GB_IN_BYTES = 1073741824;
 const QUERY_COST_PER_GB_IN_DOLLARS = 0.01;
 // Query cost limit
 const QUERY_COST_LIMIT = 0.1;
-
-// Get the 15 most recently added data points in the past 15 minutes. 
-// You can change the time period if you're not continuously ingesting data
-const QUERY_1 = "SELECT * FROM " + constants.DATABASE_NAME + "." +  constants.TABLE_NAME +
-                " WHERE time between ago(15m) and now() ORDER BY time DESC LIMIT 15";
-
-async function runAllQueries() {
-    const queries = [QUERY_1];
-
-    for (let i = 0; i < queries.length; i++) {
-        console.log(`Running query ${i+1} : ${queries[i]}`);
-        await getAllRows(queries[i], null);
-    }
-}
 
 async function getAllRows(query, nextToken = undefined) {
     let response;
@@ -33,18 +19,20 @@ async function getAllRows(query, nextToken = undefined) {
         throw err;
     }
 
-    parseQueryResult(response);
+    let results = parseQueryResult(response);
     if (response.NextToken) {
         await getAllRows(query, response.NextToken);
     }
+
+    return results;
 }
 
 function parseQueryResult(response) {
     const queryStatus = response.QueryStatus;
     console.log("Current query status: " + JSON.stringify(queryStatus));
-    var bytesMetered = queryStatus["CumulativeBytesMetered"] / ONE_GB_IN_BYTES
+    let bytesMetered = queryStatus["CumulativeBytesMetered"] / ONE_GB_IN_BYTES;
     console.log("Bytes Metered so far: " + bytesMetered + " GB");
-    var queryCost = bytesMetered * QUERY_COST_PER_GB_IN_DOLLARS;
+    let queryCost = bytesMetered * QUERY_COST_PER_GB_IN_DOLLARS;
     console.log("Query cost: " + queryCost)
     if( queryCost> QUERY_COST_LIMIT)
         throw new Error("Query cost over the limit!")
@@ -52,31 +40,40 @@ function parseQueryResult(response) {
     const columnInfo = response.ColumnInfo;
     const rows = response.Rows;
 
-    console.log("Metadata: " + JSON.stringify(columnInfo));
-    console.log("Data: ");
+    // Get Metadata
+    // console.log("Metadata: " + JSON.stringify(columnInfo));
+    // console.log("Data: ");
 
+    let arrayResults = []
     rows.forEach(function (row) {
-        console.log(parseRow(columnInfo, row));
+        //console.log(parseRow(columnInfo, row));
+        arrayResults.push(parseRow(columnInfo, row))
     });
+    console.log(arrayResults);
+    return arrayResults;
 }
 
 function parseRow(columnInfo, row) {
     const data = row.Data;
     const rowOutput = [];
 
-    var i;
-    for ( i = 0; i < data.length; i++ ) {
+    let i;
+    let info;
+    let datum;
+    for (i = 0; i < data.length; i++) {
         info = columnInfo[i];
         datum = data[i];
         rowOutput.push(parseDatum(info, datum));
     }
-
-    return `{${rowOutput.join(", ")}}`
+    //return `{${rowOutput.join(", ")}}`
+    return rowOutput
 }
 
 function parseDatum(info, datum) {
     if (datum.NullValue != null && datum.NullValue === true) {
-        return `${info.Name}=NULL`;
+        return {
+            [info.Name]: "NULL"
+        };
     }
 
     const columnType = info.Type;
@@ -112,11 +109,14 @@ function parseTimeSeries(info, datum) {
 }
 
 function parseScalarType(info, datum) {
-    return parseColumnName(info) + datum.ScalarValue;
+    let column = parseColumnName(info)
+    return  {
+        [column]: datum.ScalarValue
+    };
 }
 
 function parseColumnName(info) {
-    return info.Name == null ? "" : `${info.Name}=`;
+    return info.Name == null ? "" : `${info.Name}`;
 }
 
 function parseArray(arrayColumnInfo, arrayValues) {
@@ -127,5 +127,5 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = {runAllQueries, getAllRows};
+module.exports = {getAllRows};
 
