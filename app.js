@@ -1,6 +1,6 @@
 const AWS = require("aws-sdk");
 const express = require('express')
-const services = require("./services/callService")
+const services = require("./services/query-service")
 
 const app = express();
 app.use(express.json())
@@ -31,7 +31,7 @@ console.log("Region: ", AWS.config.region);
 queryClient = new AWS.TimestreamQuery();
 
 app.get('/recently-added-data', async function(req, res) {
-    let result = await services.callService();
+    let result = await services.queryService();
 
     res.json(result);
 });

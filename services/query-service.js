@@ -4,7 +4,7 @@ const constants = require("../constants");
 //Get the 15 most recently added data points in the past 15 minutes.
 
 
-async function callService() {
+async function queryService() {
 
     const QUERY = "SELECT * FROM " + constants.DATABASE_NAME + "." +  constants.TABLE_NAME + " WHERE time between ago(15m) and now() ORDER BY time DESC LIMIT 15";
 
@@ -18,4 +18,4 @@ async function callService() {
     //await queryExample.tryCancelQuery();
 }
 
-module.exports = {callService};
+module.exports = {queryService};
