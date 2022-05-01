@@ -38,7 +38,7 @@ app.get('/recently-added-data', async function(req, res) {
 
 app.get('/recently-added-data/:devEui', async function(req, res) {
   let result;
-  result = await services.recentlyAddedDataFromSpecificDevice(req.params.devEui);
+  result = await services.recentlyAddedDataFromDevice(req.params.devEui);
 
   res.json(result);
 });

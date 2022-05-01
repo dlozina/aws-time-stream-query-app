@@ -22,12 +22,12 @@ async function recentlyAddedData() {
 
 /**
  * Run query to get results.
- * Get the 15 most recently added data points in the past 15 minutes,
+ * Get the 15 most recently added data points,
  * from specific device.
  * @param {string} devEui - DevEui for query
  * @return {[]} - Array of results
  */
-async function recentlyAddedDataFromSpecificDevice(devEui) {
+async function recentlyAddedDataFromDevice(devEui) {
   // eslint-disable-next-line max-len
   const QUERY = "SELECT * FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME + " WHERE devEui = '" + devEui + "' ORDER BY time DESC LIMIT 15";
 
@@ -41,4 +41,4 @@ async function recentlyAddedDataFromSpecificDevice(devEui) {
   // await queryExample.tryCancelQuery();
 }
 
-module.exports = {recentlyAddedData, recentlyAddedDataFromSpecificDevice};
+module.exports = {recentlyAddedData, recentlyAddedDataFromDevice};

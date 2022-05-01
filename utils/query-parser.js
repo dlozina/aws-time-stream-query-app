@@ -7,8 +7,11 @@ const QUERY_COST_LIMIT = 0.1;
 
 /**
  * Get and parse all query results.
+ * Timestream returns the result set in a paginated manner to optimize the
+ * responsiveness of your applications
  * @param {string} query - Query request.
- * @param {string} nextToken - Add next query.
+ * @param {string} nextToken - Pagination token.
+ * @return {[]} - Return array of objects
  */
 async function getAllRows(query, nextToken = undefined) {
   let response;
@@ -32,7 +35,7 @@ async function getAllRows(query, nextToken = undefined) {
 
 /**
  * Get metadata, column and row information.
- * @param {string} response - Query response.
+ * @param {{}} response - Query response timestream object.
  * @return {[]} - Array of results
  */
 function parseQueryResult(response) {
@@ -62,8 +65,8 @@ function parseQueryResult(response) {
 
 /**
  * Parse every result row.
- * @param {string} columnInfo - Column from query response.
- * @param {string} row - Row from query response.
+ * @param {[]} columnInfo - Column array from query response.
+ * @param {{}} row - Row object from query response.
  * @return {[]} - Array of results
  */
 function parseRow(columnInfo, row) {
@@ -83,8 +86,8 @@ function parseRow(columnInfo, row) {
 
 /**
  * Parse every result row.
- * @param {string} info - Column from query response.
- * @param {string} datum - Row from query response.
+ * @param {{}} info - Single Column object from query response.
+ * @param {{}} datum - Single Row object from query response.
  * @return {{}} - Return object
  */
 function parseDatum(info, datum) {
@@ -116,8 +119,8 @@ function parseDatum(info, datum) {
 
 /**
  * Parse parseTimeSeries.
- * @param {string} info - Column from query response.
- * @param {string} datum - Row from query response.
+ * @param {{}} info - Column info object
+ * @param {{}} datum - Timeseries object
  * @return {string} - String
  */
 function parseTimeSeries(info, datum) {
@@ -132,9 +135,9 @@ function parseTimeSeries(info, datum) {
 
 /**
  * Parse parseScalarType.
- * @param {string} info - Column from query response.
- * @param {string} datum - Row from query response.
- * @return {{}} - Return Object
+ * @param {{}} info - Column info object
+ * @param {{}} datum - Scalar value object
+ * @return {{}} - Return field object
  */
 function parseScalarType(info, datum) {
   const column = parseColumnName(info);
@@ -145,8 +148,8 @@ function parseScalarType(info, datum) {
 
 /**
  * Parse Column Name.
- * @param {string} info - Column from query response.
- * @param {string} datum - Row from query response.
+ * @param {{}} info - Column info object
+ * @param {string} datum - Row from query response
  * @return {string} - Return String
  */
 function parseColumnName(info) {
@@ -155,8 +158,8 @@ function parseColumnName(info) {
 
 /**
  * Parse Array.
- * @param {string} arrayColumnInfo - Column from query response.
- * @param {[]} arrayValues - Row from query response.
+ * @param {{}} arrayColumnInfo - Column info object
+ * @param {[]} arrayValues - Row array values
  * @return {string} - Return string
  */
 function parseArray(arrayColumnInfo, arrayValues) {
