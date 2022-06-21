@@ -22,7 +22,7 @@ async function getAllRows(query, nextToken = undefined) {
     }).promise();
   } catch (err) {
     console.error('Error while querying:', err);
-    throw err;
+    throw new Error('Error in query string');
   }
 
   const results = parseQueryResult(response);
@@ -60,7 +60,14 @@ function parseQueryResult(response) {
     arrayResults.push(parseRow(columnInfo, row));
   });
 
-  return arrayResults;
+  const postProcessingArrayResults = [];
+  let i;
+  for (i = 0; i < arrayResults.length; i++) {
+    const editedResult = Object.assign({}, ...arrayResults[i]);
+    postProcessingArrayResults.push(editedResult);
+  }
+
+  return postProcessingArrayResults;
 }
 
 /**
@@ -121,16 +128,19 @@ function parseDatum(info, datum) {
  * Parse parseTimeSeries.
  * @param {{}} info - Column info object
  * @param {{}} datum - Timeseries object
- * @return {string} - String
+ * @return {[]} - String
  */
 function parseTimeSeries(info, datum) {
   const timeSeriesOutput = [];
   datum.TimeSeriesValue.forEach(function(dataPoint) {
-    // eslint-disable-next-line max-len
-    timeSeriesOutput.push(`{time=${dataPoint.Time}, value=${parseDatum(info.Type.TimeSeriesMeasureValueColumnInfo, dataPoint.Value)}}`);
+    const value = parseDatum(
+        info.Type.TimeSeriesMeasureValueColumnInfo,
+        dataPoint.Value);
+    const time = dataPoint.Time;
+    timeSeriesOutput.push({['time']: time, ['value']: value['scalarValue']});
   });
 
-  return `[${timeSeriesOutput.join(', ')}]`;
+  return timeSeriesOutput;
 }
 
 /**
@@ -140,7 +150,11 @@ function parseTimeSeries(info, datum) {
  * @return {{}} - Return field object
  */
 function parseScalarType(info, datum) {
-  const column = parseColumnName(info);
+  let column = parseColumnName(info);
+  // Added check for TimeSeries scalar values
+  if (column === '') {
+    column = 'scalarValue';
+  }
   return {
     [column]: datum.ScalarValue,
   };

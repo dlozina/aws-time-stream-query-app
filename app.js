@@ -31,16 +31,133 @@ queryClient = new AWS.TimestreamQuery();
 
 // *** App endpoints ***
 app.get('/recently-added-data', async function(req, res) {
-  const result = await services.recentlyAddedData();
-
-  res.json(result);
+  try {
+    const result = await services.recentlyAddedData();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
 });
 
 app.get('/recently-added-data/:devEui', async function(req, res) {
-  let result;
-  result = await services.recentlyAddedDataFromDevice(req.params.devEui);
+  try {
+    const result = await services.recentlyAddedDataFromDevice(
+        req.params.devEui);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
 
-  res.json(result);
+app.get('/hourly-consumption/:devEui', async function(req, res) {
+  try {
+    const result = await services.hourlyConsumptionFromDevice(
+        req.params.devEui);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/daily-consumption/:devEui', async function(req, res) {
+  try {
+    const result = await services.dailyConsumptionFromDevice(req.params.devEui);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/weekly-consumption/:devEui', async function(req, res) {
+  try {
+    const result = await services.weeklyConsumptionFromDevice(
+        req.params.devEui);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/monthly-consumption/:devEui', async function(req, res) {
+  try {
+    const result = await services.monthlyConsumptionFromDevice(
+        req.params.devEui);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.post('/consumption-period/:devEui', async function(req, res) {
+  try {
+    const result = await services.consumptionPeriodFromDevice(
+        req.params.devEui,
+        req.body.sinceDatetime,
+        req.body.untilDatetime,
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/hourly-temp-graph/:devEui', async function(req, res) {
+  try {
+    const result = await services.hourlyTempGraph(req.params.devEui);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/table-data', async function(req, res) {
+  try {
+    const result = await services.tableData();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/change-table-data', async function(req, res) {
+  try {
+    const result = await services.changeTableData();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.post('/full-table-data', async function(req, res) {
+  try {
+    const result = await services.fullTableData(req.body.devEuis);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.get('/table-data-test', async function(req, res) {
+  try {
+    const result = [{
+      devEui: 'MyDevice',
+      changeOverDay: 1,
+      changeOverWeek: 2,
+      changeOverMonth: 3,
+      temperature: 28,
+    },
+    {
+      devEui: 'MyDevice',
+      changeOverDay: 2,
+      changeOverWeek: 2,
+      changeOverMonth: 2,
+      temperature: 30,
+    },
+    ];
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
 });
 
 app.listen(3000, function() {
