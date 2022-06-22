@@ -288,15 +288,19 @@ async function changeTableData() {
 async function fullTableData(devEuis) {
   devEuis.forEach(preProcessing);
   const devices = devEuis.join(' OR ');
-  const QUERY = "WITH get_selected_devices AS (" +
-      " SELECT devEui, null AS consumption" +
+  const QUERY = "WITH get_data_last_two_months AS (" +
+      " SELECT time, devEui, totalGallons, temperatureC" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE (time >= ago(60d)) AND (" + devices + ") ORDER BY time )," +
+      " get_selected_devices AS (" +
+      " SELECT DISTINCT(devEui), null AS consumption" +
       " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
       " WHERE " + devices + " GROUP BY devEui )," +
       " consumption_1_day AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
-      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE (time >= ago(24h)) AND (" + devices + ")" +
+      " FROM get_data_last_two_months" +
+      " WHERE (time >= ago(24h)) "+
       " GROUP BY devEui )," +
       " consumption_1_day_table AS (" +
       " SELECT a.devEui, b.consumption" +
@@ -305,8 +309,8 @@ async function fullTableData(devEuis) {
       " consumption_1_day_before AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
-      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE (time < ago(1d) AND time >= ago(2d)) AND (" + devices + ")" +
+      " FROM get_data_last_two_months"  +
+      " WHERE (time < ago(1d) AND time >= ago(2d))" +
       " GROUP BY devEui )," +
       " consumption_1_day_before_table AS (" +
       " SELECT a.devEui, b.consumption" +
@@ -315,8 +319,8 @@ async function fullTableData(devEuis) {
       " consumption_7_days AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
-      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE (time >= ago(7d)) AND (" + devices + ")" +
+      " FROM get_data_last_two_months"  +
+      " WHERE (time >= ago(7d))" +
       " GROUP BY devEui )," +
       " consumption_7_days_table AS (" +
       " SELECT a.devEui, b.consumption" +
@@ -325,8 +329,8 @@ async function fullTableData(devEuis) {
       " consumption_7_days_before AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
-      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE (time < ago(7d) AND time >= ago(14d)) AND (" + devices + ")" +
+      " FROM get_data_last_two_months" +
+      " WHERE (time < ago(7d) AND time >= ago(14d))" +
       " GROUP BY devEui )," +
       " consumption_7_days_before_table AS (" +
       " SELECT a.devEui, b.consumption" +
@@ -335,8 +339,8 @@ async function fullTableData(devEuis) {
       " consumption_30_days AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
-      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE (time >= ago(30d)) AND (" + devices + ")" +
+      " FROM get_data_last_two_months" +
+      " WHERE (time >= ago(30d))" +
       " GROUP BY devEui )," +
       " consumption_30_days_table AS (" +
       " SELECT a.devEui, b.consumption" +
@@ -345,8 +349,8 @@ async function fullTableData(devEuis) {
       " consumption_30_days_before AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
-      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE (time < ago(30d) AND time >= ago(60d)) AND (" + devices + ")" +
+      " FROM get_data_last_two_months" +
+      " WHERE (time < ago(30d) AND time >= ago(60d))" +
       " GROUP BY devEui )," +
       " consumption_30_days_before_table AS (" +
       " SELECT a.devEui, b.consumption" +
@@ -354,13 +358,13 @@ async function fullTableData(devEuis) {
       " ON a.devEui = b.devEui ORDER BY devEui )," +
       " latest_recorded_time AS (" +
       " SELECT devEui, max(time) as latest_time" +
-      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE (time >= ago(24h)) AND (" + devices + ")" +
+      " FROM get_data_last_two_months" +
+      " WHERE (time >= ago(24h))" +
       " GROUP BY devEui )," +
       " recent_temperature_reading AS (" +
       " SELECT  b.devEui, b.temperatureC as consumption" +
       " FROM latest_recorded_time a INNER JOIN " +
-      constants.DATABASE_NAME + "." + constants.TABLE_NAME + " b" +
+      " get_data_last_two_months b" +
       " ON a.devEui = b.devEui AND b.time = a.latest_time" +
       " WHERE b.time > ago(24h) ORDER BY b.devEui )," +
       " recent_temperature_reading_table AS (" +
