@@ -13,24 +13,48 @@ const QUERY_COST_LIMIT = 0.1;
  * @param {string} nextToken - Pagination token.
  * @return {[]} - Return array of objects
  */
-async function getAllRows(query, nextToken = undefined) {
+async function getAllRows(query) {
   let response;
+  let results;
   try {
     response = await queryClient.query(params = {
       QueryString: query,
-      NextToken: nextToken,
     }).promise();
   } catch (err) {
     console.error('Error while querying:', err);
     throw new Error('Error in query string');
   }
 
-  const results = parseQueryResult(response);
+  results = parseQueryResult(response);
   if (response.NextToken) {
-    await getAllRows(query, response.NextToken);
+    results = await getAllRowsWithPaging(query, response.NextToken);
   }
 
   return results;
+}
+
+/**
+ * Get and parse all query results with NextToken.
+ * Timestream returns the result set in a paginated manner to optimize the
+ * responsiveness of your applications
+ * @param {string} query - Query request.
+ * @param {string} nextToken - Pagination token.
+ * @return {[]} - Return array of objects
+ */
+async function getAllRowsWithPaging(query, nextToken = undefined) {
+  let response;
+  try {
+    response = await queryClient.query(params = {
+      QueryString: query,
+      NextToken: nextToken,
+      MaxRows: 30,
+    }).promise();
+  } catch (err) {
+    console.error('Error while querying:', err);
+    throw new Error('Error in query string');
+  }
+
+  return parseQueryResult(response);
 }
 
 /**

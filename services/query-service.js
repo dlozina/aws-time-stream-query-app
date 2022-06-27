@@ -295,7 +295,7 @@ async function fullTableData(devEuis) {
       " get_selected_devices AS (" +
       " SELECT DISTINCT(devEui), null AS consumption" +
       " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
-      " WHERE " + devices + " GROUP BY devEui )," +
+      " WHERE " + devices + ")," +
       " consumption_1_day AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
@@ -305,7 +305,7 @@ async function fullTableData(devEuis) {
       " consumption_1_day_table AS (" +
       " SELECT a.devEui, b.consumption" +
       " FROM get_selected_devices a LEFT JOIN consumption_1_day b" +
-      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " ON a.devEui = b.devEui)," +
       " consumption_1_day_before AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
@@ -315,7 +315,7 @@ async function fullTableData(devEuis) {
       " consumption_1_day_before_table AS (" +
       " SELECT a.devEui, b.consumption" +
       " FROM get_selected_devices a LEFT JOIN consumption_1_day_before b" +
-      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " ON a.devEui = b.devEui)," +
       " consumption_7_days AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
@@ -325,7 +325,7 @@ async function fullTableData(devEuis) {
       " consumption_7_days_table AS (" +
       " SELECT a.devEui, b.consumption" +
       " FROM get_selected_devices a LEFT JOIN consumption_7_days b" +
-      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " ON a.devEui = b.devEui)," +
       " consumption_7_days_before AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
@@ -335,7 +335,7 @@ async function fullTableData(devEuis) {
       " consumption_7_days_before_table AS (" +
       " SELECT a.devEui, b.consumption" +
       " FROM get_selected_devices a LEFT JOIN consumption_7_days_before b" +
-      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " ON a.devEui = b.devEui)," +
       " consumption_30_days AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
@@ -345,7 +345,7 @@ async function fullTableData(devEuis) {
       " consumption_30_days_table AS (" +
       " SELECT a.devEui, b.consumption" +
       " FROM get_selected_devices a LEFT JOIN consumption_30_days b" +
-      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " ON a.devEui = b.devEui)," +
       " consumption_30_days_before AS (" +
       " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
       " AS consumption" +
@@ -355,7 +355,7 @@ async function fullTableData(devEuis) {
       " consumption_30_days_before_table AS (" +
       " SELECT a.devEui, b.consumption" +
       " FROM get_selected_devices a LEFT JOIN consumption_30_days_before b" +
-      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " ON a.devEui = b.devEui)," +
       " latest_recorded_time AS (" +
       " SELECT devEui, max(time) as latest_time" +
       " FROM get_data_last_two_months" +
@@ -366,11 +366,11 @@ async function fullTableData(devEuis) {
       " FROM latest_recorded_time a INNER JOIN " +
       " get_data_last_two_months b" +
       " ON a.devEui = b.devEui AND b.time = a.latest_time" +
-      " WHERE b.time > ago(24h) ORDER BY b.devEui )," +
+      " WHERE b.time > ago(24h))," +
       " recent_temperature_reading_table AS (" +
       " SELECT a.devEui, b.consumption as lastReportedTemperatureReading" +
       " FROM get_selected_devices a LEFT JOIN recent_temperature_reading b" +
-      " ON a.devEui = b.devEui ORDER BY devEui )" +
+      " ON a.devEui = b.devEui)" +
       " SELECT b.devEui, a.consumption as consumptionInDay," +
       " ROUND((a.consumption - b.consumption)/b.consumption * 100, 2)" +
       " AS changePercentageDay," +
@@ -388,10 +388,142 @@ async function fullTableData(devEuis) {
       " INNER JOIN consumption_7_days_before_table d ON c.devEui = d.devEui" +
       " INNER JOIN consumption_30_days_table e ON d.devEui = e.devEui" +
       " INNER JOIN consumption_30_days_before_table f ON e.devEui = f.devEui" +
-      " INNER JOIN recent_temperature_reading_table g ON f.devEui = g.devEui" +
-      " ORDER BY a.devEui"
+      " INNER JOIN recent_temperature_reading_table g ON f.devEui = g.devEui"
 
   return await queryParser.getAllRows(QUERY);
+}
+
+/**
+ * Run query two queries in parallel to get faster response time.
+ * Get table data
+ * @param {[]} devEuis - DevEuis for query
+ * @return {[[{string}]]} - String Result in array (Specific parser needed)
+ */
+async function fullTableDataV2(devEuis) {
+  devEuis.forEach(preProcessing);
+  const devices = devEuis.join(' OR ');
+
+  // Get Day and Week data
+  const QUERY1 = "WITH get_selected_devices AS (" +
+      " SELECT devEui, null AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE " + devices + " GROUP BY devEui )," +
+      " consumption_1_day AS (" +
+      " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
+      " AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE (time >= ago(24h)) AND (" + devices + ")" +
+      " GROUP BY devEui )," +
+      " consumption_1_day_table AS (" +
+      " SELECT a.devEui, b.consumption" +
+      " FROM get_selected_devices a LEFT JOIN consumption_1_day b" +
+      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " consumption_1_day_before AS (" +
+      " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
+      " AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE (time < ago(1d) AND time >= ago(2d)) AND (" + devices + ")" +
+      " GROUP BY devEui )," +
+      " consumption_1_day_before_table AS (" +
+      " SELECT a.devEui, b.consumption" +
+      " FROM get_selected_devices a LEFT JOIN consumption_1_day_before b" +
+      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " consumption_7_days AS (" +
+      " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
+      " AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE (time >= ago(7d)) AND (" + devices + ")" +
+      " GROUP BY devEui )," +
+      " consumption_7_days_table AS (" +
+      " SELECT a.devEui, b.consumption" +
+      " FROM get_selected_devices a LEFT JOIN consumption_7_days b" +
+      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " consumption_7_days_before AS (" +
+      " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
+      " AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE (time < ago(7d) AND time >= ago(14d)) AND (" + devices + ")" +
+      " GROUP BY devEui )," +
+      " consumption_7_days_before_table AS (" +
+      " SELECT a.devEui, b.consumption" +
+      " FROM get_selected_devices a LEFT JOIN consumption_7_days_before b" +
+      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " latest_recorded_time AS (" +
+      " SELECT devEui, max(time) as latest_time" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      "  WHERE (time >= ago(24h)) AND (" + devices + ")" +
+      " GROUP BY devEui )," +
+      " recent_temperature_reading AS (" +
+      " SELECT b.devEui, b.temperatureC as consumption" +
+      " FROM latest_recorded_time a INNER JOIN " +
+      constants.DATABASE_NAME + "." + constants.TABLE_NAME + " b" +
+      " ON a.devEui = b.devEui AND b.time = a.latest_time" +
+      " WHERE b.time > ago(24h) ORDER BY b.devEui )," +
+      " recent_temperature_reading_table AS (" +
+      " SELECT a.devEui, b.consumption as lastReportedTemperatureReading" +
+      " FROM get_selected_devices a LEFT JOIN recent_temperature_reading b" +
+      " ON a.devEui = b.devEui ORDER BY devEui )" +
+      " SELECT a.devEui, a.consumption as consumptionInDay," +
+      "  ROUND((a.consumption - b.consumption)/b.consumption * 100, 2)" +
+      " AS changePercentageDay," +
+      " c.consumption as consumptionInWeek," +
+      " ROUND((c.consumption - d.consumption)/d.consumption * 100, 2)" +
+      " AS changePercentageWeek," +
+      " lastReportedTemperatureReading" +
+      " FROM" +
+      " consumption_1_day_table a INNER JOIN consumption_1_day_before_table b" +
+      " ON a.devEui = b.devEui" +
+      " INNER JOIN consumption_7_days_table c" +
+      " ON b.devEui = c.devEui" +
+      " INNER JOIN consumption_7_days_before_table d" +
+      " ON c.devEui = d.devEui" +
+      " INNER JOIN recent_temperature_reading_table e" +
+      " ON d.devEui = e.devEui" +
+      " ORDER BY a.devEui"
+
+
+  // Get Month data
+  const QUERY2 = "WITH get_selected_devices AS (" +
+      " SELECT devEui, null AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE " + devices + " GROUP BY devEui )," +
+      " consumption_30_days AS (" +
+      " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
+      " AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE (time >= ago(30d)) AND (" + devices + ")" +
+      " GROUP BY devEui )," +
+      " consumption_30_days_table AS (" +
+      " SELECT a.devEui, b.consumption" +
+      " FROM get_selected_devices a LEFT JOIN consumption_30_days b" +
+      " ON a.devEui = b.devEui ORDER BY devEui )," +
+      " consumption_30_days_before AS (" +
+      " SELECT devEui, ROUND(MAX(totalGallons) - MIN(totalGallons),3)" +
+      " AS consumption" +
+      " FROM " + constants.DATABASE_NAME + "." + constants.TABLE_NAME +
+      " WHERE (time < ago(30d) AND time >= ago(60d)) AND (" + devices + ")" +
+      " GROUP BY devEui )," +
+      " consumption_30_days_before_table AS ("+
+      " SELECT a.devEui, b.consumption" +
+      " FROM get_selected_devices a LEFT JOIN consumption_30_days_before b" +
+      " ON a.devEui = b.devEui ORDER BY devEui )" +
+      " SELECT a.devEui, a.consumption as consumptionInMonth," +
+      " ROUND((a.consumption - b.consumption)/b.consumption * 100, 2)" +
+      " AS changePercentageMonth" +
+      " FROM consumption_30_days_table a" +
+      " INNER JOIN consumption_30_days_before_table b" +
+      " ON a.devEui = b.devEui ORDER BY a.devEui"
+
+  const [query1Result, query2Result] = await Promise.all(
+      [
+        queryParser.getAllRows(QUERY1),
+        queryParser.getAllRows(QUERY2),
+      ],
+  );
+
+  // Map data for complete response
+
+  return query2Result;
 }
 
 /**
@@ -416,5 +548,6 @@ module.exports = {
   hourlyTempGraph,
   tableData,
   changeTableData,
-  fullTableData
+  fullTableData,
+  fullTableDataV2,
 };

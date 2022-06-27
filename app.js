@@ -130,7 +130,7 @@ app.get('/change-table-data', async function(req, res) {
 
 app.post('/full-table-data', async function(req, res) {
   try {
-    const result = await services.fullTableData(req.body.devEuis);
+    const result = await services.fullTableDataV2(req.body.devEuis);
     res.status(200).json(result);
   } catch (error) {
     res.status(500).send(error.message);
