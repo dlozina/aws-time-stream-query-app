@@ -514,6 +514,7 @@ async function fullTableDataV2(devEuis) {
       " INNER JOIN consumption_30_days_before_table b" +
       " ON a.devEui = b.devEui ORDER BY a.devEui"
 
+  // Run both queries in parallel
   const [query1Result, query2Result] = await Promise.all(
       [
         queryParser.getAllRows(QUERY1),
@@ -522,8 +523,19 @@ async function fullTableDataV2(devEuis) {
   );
 
   // Map data for complete response
+  query1Result.forEach((query1Result) => {
+    const tempRes = query2Result.find((x) => x.devEui === query1Result.devEui);
+    if ('consumptionInMonth' in tempRes) {
+      Object.assign(
+          query1Result, {consumptionInMonth: tempRes.consumptionInMonth});
+    }
+    if ('changePercentageMonth' in tempRes) {
+      Object.assign(query1Result,
+          {changePercentageMonth: tempRes.changePercentageMonth});
+    }
+  });
 
-  return query2Result;
+  return query1Result;
 }
 
 /**
