@@ -134,3 +134,6 @@ dist
 
 # Macbook Pro - Finder
 .DS_Store
+
+# App config
+config.json
